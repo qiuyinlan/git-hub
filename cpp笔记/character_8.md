@@ -1,5 +1,5 @@
 
-
+> 可以分开commit,多commit 几次！！！
 
 > getchar和putchar每次只能处理一个字符
 
