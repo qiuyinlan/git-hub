@@ -1,4 +1,4 @@
-11#ifndef _STRBUF_H
+#ifndef _STRBUF_H
 #define _STRBUF_H
 
 #include <fcntl.h>
