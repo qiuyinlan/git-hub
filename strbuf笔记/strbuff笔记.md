@@ -1,8 +1,9 @@
-
-# 待查询Lremalloc
-# 不一样
+# 备注
+所有插入数据,记得思考要不要补\0
+## 待查询Lremalloc
+## 不一样
 grow那个不一样
-# 缓冲区定义
+## 缓冲区定义
 缓冲区（Buffer）是计算机程序中用来临时存储数据的内存区域，它通常用于处理输入/输出操作，或者为了提高程序的效率而存储数据，特别是在处理文件读写、网络通信等操作时。简单来说，缓冲区是一个“暂时存放”数据的区域，通常用于弥补数据传输的速度差异，避免频繁的读写操作。
 通常以固定大小初始化，但这可能导致空间不足或浪费。
 动态扩容：
@@ -14,7 +15,7 @@ grow那个不一样
 文件读取、网络通信、字符串拼接等需要动态调整存储空间的场景。
 - How: 实现动态扩容缓冲区
 
-# part1  字符串缓冲区基本架构：
+## part1  字符串缓冲区基本架构：
 初始化一个固定大小的缓冲区。
 检测是否需要扩容（如缓冲区已满）。
 分配一个更大的缓冲区，将原数据复制到新缓冲区。
@@ -292,7 +293,7 @@ num：要比较的字节数，即需要比较的内存大小。
 # 清空sb
 ## 记得长度归零后,内容也要改变,要来一个'0'
 ## 用上指针指向元素的值p[]知识点
-# 扩容
+# strbuf_grow()扩容
 ## 1.注意要计算可用空间!!如果不足,就要扩容
 这个只是用来看需不需要扩展申请的内存空间的,所以不用写else的sit
 ## 注意对象!!是结构哦体里面的东西
@@ -367,7 +368,8 @@ int main() {
 - **`realloc(ptr, size)`**：`ptr` 是你要调整大小的原内存块，`size` 是新的内存大小。
 - **返回值**：返回一个指向新内存块的指针，或者在失败时返回 `NULL`。
 - **处理失败**：记得在调用 `realloc` 后检查返回值，以确保内存分配成功。如果失败，你可以选择释放资源或者继续使用原内存块。
-
+### 他们不一定都是新划分一块内存
+如果新内存块能在原地扩展，realloc 会直接在原内存地址处扩展内存，否则会重新分配一块更大的内存区域，并将原数据复制过去
 
 
 # ==未修改==追加数据
@@ -422,7 +424,12 @@ void strbuf_addbuf(struct strbuf *sb, const struct strbuf *sb2)
 ## 计算,那就直接return计算结果即可
 ## 注意,缓冲区包括'0',len不包括,所以相减之后还要再-1
 
-# 向 sb 内存坐标为 pos 位置插入
+# 8.strbuf_insert()向 sb 内存坐标为 pos 位置插入
+void strbuf_insert(struct strbuf *sb, size_t pos, const void *data, size_t len) {
+    strbuf_setlen(sb, sb->len + len);
+    memmove(sb->buf + pos + len, sb->buf + pos, sb->len - pos);
+    memcpy(sb->buf + pos, data, len);
+}
 ## memmove函数
 ```c
 void *memmove(void *dest, const void *src, size_t n);
@@ -439,8 +446,31 @@ n：要移动的字节数
 但是在不同作用域内,可以有同名变量,所以float a和int a同时作为全局变量是非法的
 ## 注意,第三个参数是移动的字节数,不是前两个参数的差!
 一般是与源目标有关系,代表你要从源目标那里拿走多少
+## len-pose
+len是实际长度,不要理解成all了
 
 
+
+
+
+
+
+
+
+
+
+# Part 2C
+TASK
+实现字符串缓冲区类 strbuf 删除部分内容等功能。
+
+// 去除 sb 缓冲区左端的所有空格、制表符和'\t'字符。
+void strbuf_ltrim(struct strbuf *sb);
+
+// 去除 sb 缓冲区右端的所有空格、制表符和'\t'字符。
+void strbuf_rtrim(struct strbuf *sb);
+
+// 删除 sb 缓冲区从 pos 坐标开始长度为 len 的内容。
+void strbuf_remove(struct strbuf *sb, size_t pos, size_t len);
 # void strbuf_rtrim(struct strbuf *sb);
 去除sb缓冲区右端的所有空格，tab,'\t'。
 ## 条件
@@ -455,12 +485,124 @@ i=sb->len  这是错的,还要减去1
 ## 注意!for循环条件中,如果最后=0时退出,要写清楚趋势
 for(int i=len-1;==i=0==;i--)
 这个i=0,不是比较操作!!!是赋值操作!!要写成>=0
+## 1.去除 sb 缓冲区右端的所有空格、制表符和'\t'字符。
+### m1
+void strbuf_rtrim(struct strbuf *sb)
+{
+    int i;
+    for (i = sb->len - 1; i >= 0; i--) {  // 从右到左遍历缓冲区
+        if (sb->buf[i] == '\t' || sb->buf[i] == ' ') {  // 如果是空格或制表符
+            sb->buf[i] = '\0';  // 替换为空字符
+            sb->len--;  // 减少有效字符的长度
+        } else {
+            break;  // 遇到非空格、非制表符字符时退出循环
+        }
+    }
+}
+#### 记得要改,就所有量一起改,改了内容别忘了改长度
+替换称\0,表结束(正常的结束)
+
+#### ==???== 忽略了最右边if是空白字符吗m
+
+void strbuf_ltrim(struct strbuf *sb)
+{
+  size_t i = sb->len - 1;
+    while(isspace((unsigned char)sb->buf[i-1]) && i > 0)
+    i--;
+    if(i < sb->len)
+    {
+        sb->buf[i] = '\0';
+        sb->len = i;
+    }
+    }
+
+
+#### isspace函数
+isspace 是 C 语言标准库中的一个函数，用于检查一个字符是否是空白字符。空白字符包括空格（' '）、制表符（\t）、换行符（\n）、回车符（\r）、垂直制表符（\v）和换页符（\f）。
+int isspace(int c);
+参数：
+c：需要检查的字符，通常是一个 int 类型的值，表示一个字符的 ASCII 码。由于 isspace 会将 c 转换为无符号字符，它接受 char、unsigned char 或 EOF。
+返回值：
+如果 c 是空白字符，isspace 返回非零值（通常是 1）。
+如果 c 不是空白字符，isspace 返回 0。
+
+## 2.去除 sb 缓冲区左端的所有空格、制表符和'\t'字符。
+
+### m1
+void strbuf_ltrim(struct strbuf *sb) {
+    size_t trimpos = 0;
+    
+    // 找到第一个不是空白字符的位置
+    while (isspace((unsigned char)sb->buf[trimpos]) && trimpos < sb->len) {
+        trimpos++;
+    }
+
+    // 如果有空白字符被去除
+    if (trimpos > 0) {
+        // 将剩余部分移动到左端
+        memmove(sb->buf, sb->buf + trimpos, sb->len - trimpos + 1);
+        // 更新长度
+        sb->len -= trimpos;
+    }
+}
+
+
+### m2
+for循环里适合表明遍历次数,while适合表明很长的遍历条件&&等于[循环加上了if判断]
+void strbuf_ltrim(struct strbuf *sb) {
+    int trimpos = 0;
+    while (sb->buf[trimpos] == ' ' || sb->buf[trimpos] == '\t') trimpos++;
+    memmove(sb->buf, sb->buf + trimpos, (sb->len -= trimpos) + 1);
+}
+### len+1与len-1
+len减去1是因为数组/指针从0开始
+len+1是因为len是不包括\0的,而复制的时候要把\0也一起复制过去
+
+// 删除 sb 缓冲区从 pos 坐标开始长度为 len 的内容。
+void strbuf_remove(struct strbuf *sb, size_t pos, size_t len)
+{
+  size_t end=pos+len;
+  if(end>sb->len)
+  {
+    end=sb->len;
+  }
+  memmove(sb->buf+pos,sb->buf+end,sb->len-pos);
+  sb->len-=end-pos;
+  sb->buf[sb->len]='\0';
+}
+
+
+
 
 # 将文件描述符为 fd 的所有文件内容追加到 sb 中。sb 增长 hint ? hint : 8192 大小
 ssize_t strbuf_read(struct strbuf *sb, int fd, size_t hint)
+## fopen
+fopen 函数：
+作用：fopen 用于打开一个文件，并返回一个指向 FILE 类型的==指针== ，该指针可以用来进行文件操作。
+原型：
+c
+复制代码
+FILE *fopen(const char *filename, const char *mode);
+## fdopen
+fdopen 函数：
+作用：fdopen 将一个已存在的文件描述符（通常是由低级系统调用如 open 或 socket 获取的）转换为 FILE 类型的指针，使得可以使用标准库提供的文件操作函数（如 fread、fwrite 等）来进行操作。
+原型：
+c
+复制代码
+FILE *fdopen(int fd, const char *mode);
+参数：
+fd：一个文件描述符，通常是通过系统调用（如 open 或 socket）获得的。
+mode：文件打开模式，指定读写方式（例如 "r"、"w" 等）。
+
+这道题题目要求了fd了
 ## 先明确在干什么--add
 要添加东西,就要先保证空间
 # FILE
 c函数库将FILE定义为一个结构体
-
+## FILE *fp = fdopen(fd, "r");转化
+fdopen 将文件描述符 fd 转换为标准的 FILE * 类型指针 fp。FILE * 是 C 标准库中用于处理文件的类型，提供了更高层次的文件操作功能（比如缓冲读取）。
+## fgetc
+fgetc 每次从文件流中读取一个字符（即一个字节），并返回该字符的值。
+fgetc 的返回值是 int 类型，这是因为它可以返回有效字符和 EOF（表示文件结束或错误）。
+读取到文件末尾时，fgetc 会返回 EOF，因此在使用 fgetc 时通常会用 while 或 if 语句判断是否已到达文件末尾。
 
