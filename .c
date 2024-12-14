@@ -1,24 +1,18 @@
-#include <stdio.h>
-
-int Count_Digit ( const int N, const int D );
-
-int main()
-{
-    int N, D;
-    
-    scanf("%d %d", &N, &D);
-    printf("%d\n", Count_Digit(N, D));
-    return 0;
-}
-int Count_Digit ( const int N, const int D ){
-    int count=0,i,n;
-    n=N;
-    for(i=n;n%10!=0;){
-        if(D==n%10){
-            count++;
+#include<stdio.h>
+int main(){
+    int m,n;
+    scanf("%d%d",&m,&n);
+    int arr[m][n];
+    int sum[m]={0};
+    for(int i=0;i<m;i++){
+        for(int j=0;j<n;j++){
+            scanf("%d",&arr[i][j]);
+            sum[i]+=arr[i][j];
         }
-        n=n/10;
     }
-    return count;
+    for(int i=0;i<m;i++){
+        
+            printf("%d",sum[i]);
+        
+    }
 }
-/* 你的代码将被嵌在这里 */
